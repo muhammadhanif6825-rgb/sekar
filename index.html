@@ -2,10 +2,10 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Heart Particles Animation</title>
+  <title>Interactive Heart Particles</title>
   <style>
     body { margin: 0; overflow: hidden; background: black; }
-    canvas { display: block; }
+    canvas { display: block; cursor: pointer; }
   </style>
   <!-- Three.js CDN -->
   <script src="https://cdn.jsdelivr.net/npm/three@0.153.0/build/three.min.js"></script>
@@ -45,13 +45,32 @@
   // Camera position
   camera.position.z = 40;
 
-  // Animation with GSAP
-  gsap.fromTo(scene.rotation, { y: -0.2 }, {
+  // Default animation (slow swing)
+  gsap.to(scene.rotation, {
     y: 0.2,
-    repeat: -1,
+    duration: 3,
     yoyo: true,
-    ease: "power2.inOut",
-    duration: 3
+    repeat: -1,
+    ease: "power2.inOut"
+  });
+
+  // On click, make the heart spin quickly then return
+  window.addEventListener("click", () => {
+    gsap.to(scene.rotation, {
+      y: scene.rotation.y + Math.PI * 2,
+      duration: 1,
+      ease: "power2.inOut",
+      onComplete: () => {
+        // After spin, smoothly go back to normal swing
+        gsap.to(scene.rotation, {
+          y: 0.2,
+          duration: 2,
+          yoyo: true,
+          repeat: -1,
+          ease: "power2.inOut"
+        });
+      }
+    });
   });
 
   // Render loop
