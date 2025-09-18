@@ -2,86 +2,79 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Interactive Heart Particles</title>
+  <title>Falling Blocks Heart</title>
   <style>
     body { margin: 0; overflow: hidden; background: black; }
     canvas { display: block; cursor: pointer; }
   </style>
-  <!-- Three.js CDN -->
   <script src="https://cdn.jsdelivr.net/npm/three@0.153.0/build/three.min.js"></script>
-  <!-- GSAP CDN -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
 </head>
 <body>
 <script>
-  // Scene setup
+  // Setup scene
   const scene = new THREE.Scene();
   const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
   const renderer = new THREE.WebGLRenderer({ antialias: true });
   renderer.setSize(window.innerWidth, window.innerHeight);
   document.body.appendChild(renderer.domElement);
 
-  // Heart shape vertices
-  const vertices = [];
-  for (let t = 0; t < Math.PI * 2; t += 0.02) {
+  camera.position.z = 60;
+
+  // Group for heart blocks
+  const heartGroup = new THREE.Group();
+  scene.add(heartGroup);
+
+  // Generate heart shape points (2D)
+  const heartShape = [];
+  for (let t = 0; t < Math.PI * 2; t += 0.15) {
     const x = 16 * Math.pow(Math.sin(t), 3);
     const y = 13 * Math.cos(t) - 5 * Math.cos(2 * t) - 2 * Math.cos(3 * t) - Math.cos(4 * t);
-    vertices.push(new THREE.Vector3(x, y, 0));
+    heartShape.push({x, y});
   }
 
-  // Geometry & material
-  const geometry = new THREE.BufferGeometry().setFromPoints(vertices);
-  const material = new THREE.PointsMaterial({
-    color: 0xee5282,
-    size: 0.3,
-    blending: THREE.AdditiveBlending,
-    transparent: true
-  });
+  // Function to drop blocks and form heart
+  function dropBlocks() {
+    // Clear previous blocks
+    while (heartGroup.children.length > 0) {
+      heartGroup.remove(heartGroup.children[0]);
+    }
 
-  // Particles
-  const particles = new THREE.Points(geometry, material);
-  scene.add(particles);
+    const geometry = new THREE.BoxGeometry(1, 1, 1);
+    const material = new THREE.MeshBasicMaterial({ color: 0xff3366 });
 
-  // Camera position
-  camera.position.z = 40;
+    heartShape.forEach((p, i) => {
+      const block = new THREE.Mesh(geometry, material);
 
-  // Default animation (slow swing)
-  gsap.to(scene.rotation, {
-    y: 0.2,
-    duration: 3,
-    yoyo: true,
-    repeat: -1,
-    ease: "power2.inOut"
-  });
+      // start from random X and Y above screen
+      block.position.set((Math.random() - 0.5) * 80, 40 + Math.random() * 20, 0);
 
-  // On click, make the heart spin quickly then return
-  window.addEventListener("click", () => {
-    gsap.to(scene.rotation, {
-      y: scene.rotation.y + Math.PI * 2,
-      duration: 1,
-      ease: "power2.inOut",
-      onComplete: () => {
-        // After spin, smoothly go back to normal swing
-        gsap.to(scene.rotation, {
-          y: 0.2,
-          duration: 2,
-          yoyo: true,
-          repeat: -1,
-          ease: "power2.inOut"
-        });
-      }
+      heartGroup.add(block);
+
+      // animate block falling into heart position
+      gsap.to(block.position, {
+        x: p.x,
+        y: p.y,
+        z: 0,
+        duration: 2,
+        delay: i * 0.05,
+        ease: "bounce.out"
+      });
     });
-  });
+  }
 
-  // Render loop
+  // Click event
+  window.addEventListener("click", dropBlocks);
+
+  // Animation loop
   function animate() {
     requestAnimationFrame(animate);
     renderer.render(scene, camera);
   }
   animate();
 
-  // Resize handler
-  window.addEventListener('resize', () => {
+  // Handle resize
+  window.addEventListener("resize", () => {
     camera.aspect = window.innerWidth / window.innerHeight;
     camera.updateProjectionMatrix();
     renderer.setSize(window.innerWidth, window.innerHeight);
